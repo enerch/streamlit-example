@@ -1,40 +1,36 @@
-import altair as alt
-import numpy as np
-import pandas as pd
 import streamlit as st
+import pyvista as pv
+from lxml import etree
+import tempfile
+import os
 
-"""
-# Welcome to Streamlit!
+# Function to parse CityGML and return a list of meshes
+def parse_citygml_to_mesh(file_path):
+    buildings_meshes = []
+    # Parsing logic here - this needs to be implemented based on your CityGML structure.
+    # For demonstration, this function should be filled with logic to read building coordinates
+    # and create pyvista meshes (e.g., pv.PolyData or pv.StructuredGrid).
+    return buildings_meshes
 
-Edit `/streamlit_app.py` to customize this app to your heart's desire :heart:.
-If you have any questions, checkout our [documentation](https://docs.streamlit.io) and [community
-forums](https://discuss.streamlit.io).
+# Streamlit UI
+st.title('CityGML Building Viewer')
 
-In the meantime, below is an example of what you can do with just a few lines of code:
-"""
+# File Uploader
+uploaded_file = st.file_uploader("Choose a CityGML file", type=['xml', 'gml'])
+if uploaded_file is not None:
+    # Use a temporary file to avoid keeping the file in memory
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.gml') as tmp:
+        tmp.write(uploaded_file.getvalue())
+        tmp_path = tmp.name
 
-num_points = st.slider("Number of points in spiral", 1, 10000, 1100)
-num_turns = st.slider("Number of turns in spiral", 1, 300, 31)
+    # Parse CityGML file to get meshes
+    buildings_meshes = parse_citygml_to_mesh(tmp_path)
+    
+    # Cleanup the temporary file
+    os.remove(tmp_path)
 
-indices = np.linspace(0, 1, num_points)
-theta = 2 * np.pi * num_turns * indices
-radius = indices
-
-x = radius * np.cos(theta)
-y = radius * np.sin(theta)
-
-df = pd.DataFrame({
-    "x": x,
-    "y": y,
-    "idx": indices,
-    "rand": np.random.randn(num_points),
-})
-
-st.altair_chart(alt.Chart(df, height=700, width=700)
-    .mark_point(filled=True)
-    .encode(
-        x=alt.X("x", axis=None),
-        y=alt.Y("y", axis=None),
-        color=alt.Color("idx", legend=None, scale=alt.Scale()),
-        size=alt.Size("rand", legend=None, scale=alt.Scale(range=[1, 150])),
-    ))
+    # Visualization with PyVista
+    p = pv.Plotter(notebook=False)
+    for mesh in buildings_meshes:
+        p.add_mesh(mesh, color='tan')
+    p.show(jupyter_backend='pythreejs')
